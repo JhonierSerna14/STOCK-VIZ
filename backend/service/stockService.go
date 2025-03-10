@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/JhonierSerna14/STOCK-VIZ/analyzer"
 	"github.com/JhonierSerna14/STOCK-VIZ/database"
 	"github.com/JhonierSerna14/STOCK-VIZ/models"
 )
@@ -15,6 +16,7 @@ type StockService struct {
 	baseURL    string
 	token      string
 	repository *database.StockRepository
+	analyzer   *analyzer.StockAnalyzer
 }
 
 func NewStockService(repo *database.StockRepository) *StockService {
@@ -28,11 +30,14 @@ func NewStockService(repo *database.StockRepository) *StockService {
 		fmt.Println("Advertencia: STOCK_API_BASE_URL no está configurado")
 	}
 
-	return &StockService{
+	service := &StockService{
 		baseURL:    baseURL,
 		token:      token,
 		repository: repo,
 	}
+
+	service.analyzer = analyzer.NewStockAnalyzer(repo)
+	return service
 }
 
 func (s *StockService) GetStocks(nextPage string) (*models.StockResponse, error) {
@@ -71,4 +76,16 @@ func (s *StockService) GetStocks(nextPage string) (*models.StockResponse, error)
 	}
 
 	return &stockResponse, nil
+}
+
+func (s *StockService) GetAllStocks() ([]models.Stock, error) {
+	return s.repository.GetAllStocks()
+}
+
+func (s *StockService) DeleteAllStocks() error {
+	return s.repository.DeleteAllStocks()
+}
+
+func (s *StockService) GetRecommendations() ([]analyzer.StockRecommendation, error) {
+	return s.analyzer.GetTopRecommendations(5) // Retorna top 5 recomendaciones
 }
