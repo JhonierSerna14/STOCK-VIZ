@@ -86,6 +86,6 @@ func (s *StockService) DeleteAllStocks() error {
 	return s.repository.DeleteAllStocks()
 }
 
-func (s *StockService) GetRecommendations() ([]analyzer.StockRecommendation, error) {
+func (s *StockService) GetRecommendations() ([]models.StockRecommendation, error) {
 	return s.analyzer.GetTopRecommendations(5) // Retorna top 5 recomendaciones
 }
