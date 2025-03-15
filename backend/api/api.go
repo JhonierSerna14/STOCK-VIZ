@@ -25,6 +25,13 @@ func NewAPI(db *gorm.DB) *API {
 	}
 }
 
+// NewAPIWithService crea y devuelve una nueva instancia de API configurada con un servicio de stocks ya existente.
+func NewAPIWithService(stockService *service.StockService) *API {
+	return &API{
+		stockService: stockService,
+	}
+}
+
 // getStocks maneja solicitudes GET para obtener stocks con paginación.
 // Acepta un parámetro de consulta 'next_page' para implementar paginación.
 func (a *API) getStocks(w http.ResponseWriter, r *http.Request) {
@@ -79,4 +86,21 @@ func (a *API) getRecommendations(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(recommendations)
+}
+
+// migrateAllStocks maneja solicitudes POST para migrar todos los stocks
+// desde la API externa a la base de datos local.
+// Realiza llamadas recursivas hasta que no haya más páginas disponibles.
+func (a *API) migrateAllStocks(w http.ResponseWriter, r *http.Request) {
+	totalItems, err := a.stockService.MigrateAllStocks()
+	if err != nil {
+		http.Error(w, "Error migrando stocks: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"mensaje":     "Migración completada exitosamente",
+		"total_items": totalItems,
+	})
 }

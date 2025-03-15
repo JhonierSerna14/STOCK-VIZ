@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/JhonierSerna14/STOCK-VIZ/analyzer"
 	"github.com/JhonierSerna14/STOCK-VIZ/database"
@@ -37,6 +38,18 @@ func NewStockService(repo *database.StockRepository) *StockService {
 	}
 
 	service.analyzer = analyzer.NewStockAnalyzer(repo)
+	return service
+}
+
+// Nuevo método para crear un servicio con sincronización automática
+func NewStockServiceWithSync(repo *database.StockRepository, syncInterval time.Duration) *StockService {
+	service := NewStockService(repo)
+
+	// Iniciar la sincronización periódica
+	if syncInterval > 0 {
+		service.StartPeriodicSync(syncInterval)
+	}
+
 	return service
 }
 
@@ -88,4 +101,79 @@ func (s *StockService) DeleteAllStocks() error {
 
 func (s *StockService) GetRecommendations() ([]models.StockRecommendation, error) {
 	return s.analyzer.GetTopRecommendations(5) // Retorna top 5 recomendaciones
+}
+
+// MigrateAllStocks recupera todos los stocks de la API externa
+// y los guarda en la base de datos local de forma recursiva,
+// hasta que ya no haya más páginas disponibles.
+func (s *StockService) MigrateAllStocks() (int, error) {
+	var nextPage string
+	var totalItems int
+
+	for {
+		stockResponse, err := s.GetStocks(nextPage)
+		if err != nil {
+			return totalItems, fmt.Errorf("error obteniendo stocks: %v", err)
+		}
+
+		// Contamos cuántos items hemos procesado
+		totalItems += len(stockResponse.Items)
+
+		// Si no hay más páginas, terminamos el proceso
+		if stockResponse.NextPage == "" {
+			break
+		}
+
+		// Preparamos la siguiente página
+		nextPage = stockResponse.NextPage
+	}
+
+	return totalItems, nil
+}
+
+// SyncStocksWithAPI sincroniza los stocks de la API externa con la base de datos local.
+// Devuelve el número de nuevos stocks añadidos.
+func (s *StockService) SyncStocksWithAPI() (int, error) {
+	var nextPage string
+	var totalNewItems int
+
+	for {
+		stockResponse, err := s.GetStocks(nextPage)
+		if err != nil {
+			return totalNewItems, fmt.Errorf("error obteniendo stocks: %v", err)
+		}
+
+		// Contamos cuántos items hemos procesado
+		totalNewItems += len(stockResponse.Items)
+
+		// Si no hay más páginas, terminamos el proceso
+		if stockResponse.NextPage == "" {
+			break
+		}
+
+		// Preparamos la siguiente página
+		nextPage = stockResponse.NextPage
+	}
+
+	return totalNewItems, nil
+}
+
+// StartPeriodicSync inicia un proceso en segundo plano que sincroniza
+// periódicamente la base de datos local con la API externa.
+func (s *StockService) StartPeriodicSync(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				count, err := s.SyncStocksWithAPI()
+				if err != nil {
+					fmt.Printf("Error en la sincronización periódica: %v\n", err)
+				} else {
+					fmt.Printf("Sincronización completada: %d stocks procesados\n", count)
+				}
+			}
+		}
+	}()
+	fmt.Printf("Sincronización periódica iniciada con intervalo de %v\n", interval)
 }
