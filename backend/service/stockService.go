@@ -41,7 +41,7 @@ func NewStockService(repo *database.StockRepository) *StockService {
 	return service
 }
 
-// Nuevo método para crear un servicio con sincronización automática
+// Método para crear un servicio con sincronización automática
 func NewStockServiceWithSync(repo *database.StockRepository, syncInterval time.Duration) *StockService {
 	service := NewStockService(repo)
 
@@ -99,8 +99,14 @@ func (s *StockService) DeleteAllStocks() error {
 	return s.repository.DeleteAllStocks()
 }
 
-func (s *StockService) GetRecommendations() ([]models.StockRecommendation, error) {
-	return s.analyzer.GetTopRecommendations(5) // Retorna top 5 recomendaciones
+func (s *StockService) GetRecommendations(filter models.RecommendationFilter) ([]models.StockRecommendation, error) {
+	// Si no se proporciona límite, usar valor por defecto
+	limit := filter.Limit
+	if limit <= 0 {
+		limit = 5
+	}
+
+	return s.analyzer.GetFilteredRecommendations(filter, limit)
 }
 
 // MigrateAllStocks recupera todos los stocks de la API externa
@@ -176,4 +182,9 @@ func (s *StockService) StartPeriodicSync(interval time.Duration) {
 		}
 	}()
 	fmt.Printf("Sincronización periódica iniciada con intervalo de %v\n", interval)
+}
+
+// GetAllStocksPaginated obtiene stocks paginados de la base de datos
+func (s *StockService) GetAllStocksPaginated(page, limit int) ([]models.Stock, int64, error) {
+	return s.repository.GetStocksPaginated(page, limit)
 }

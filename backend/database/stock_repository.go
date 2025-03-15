@@ -37,3 +37,25 @@ func (r *StockRepository) GetAllStocks() ([]models.Stock, error) {
 func (r *StockRepository) DeleteAllStocks() error {
 	return r.db.Exec("DELETE FROM stocks").Error
 }
+
+// GetStocksPaginated recupera stocks con paginación
+func (r *StockRepository) GetStocksPaginated(page, limit int) ([]models.Stock, int64, error) {
+	var stocks []models.Stock
+	var total int64
+
+	// Calcular el offset basado en la página y el límite
+	offset := (page - 1) * limit
+
+	// Obtener total de registros
+	if err := r.db.Model(&models.Stock{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Obtener registros paginados
+	result := r.db.Limit(limit).Offset(offset).Find(&stocks)
+	if result.Error != nil {
+		return nil, 0, result.Error
+	}
+
+	return stocks, total, nil
+}
