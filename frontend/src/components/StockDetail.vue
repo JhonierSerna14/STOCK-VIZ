@@ -5,19 +5,13 @@
       <p>Cargando detalles del stock...</p>
     </div>
 
-    <div
-      v-else-if="error"
-      class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded"
-    >
+    <div v-else-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
       {{ error }}
     </div>
 
     <div v-else-if="!stock" class="text-center py-8">
       <p class="text-gray-500">Stock no encontrado</p>
-      <router-link
-        to="/stocks"
-        class="text-blue-500 hover:underline mt-2 inline-block"
-      >
+      <router-link to="/stocks" class="text-blue-500 hover:underline mt-2 inline-block">
         Volver a la lista de stocks
       </router-link>
     </div>
@@ -37,20 +31,15 @@
         <div class="border-r pr-8">
           <div class="mb-4">
             <span class="text-gray-600">Score:</span>
-            <div
-              class="text-3xl font-bold"
-              :class="getScoreColorClass(stock.score)"
-            >
+            <div class="text-3xl font-bold" :class="getScoreColorClass(stock.score)">
               {{ stock.score.toFixed(2) }}
             </div>
           </div>
 
           <div class="mb-4">
             <span class="text-gray-600">Rating:</span>
-            <div
-              class="text-xl font-semibold px-3 py-1 rounded-full inline-block"
-              :class="getRatingColorClass(stock.latest_rating)"
-            >
+            <div class="text-xl font-semibold px-3 py-1 rounded-full inline-block"
+              :class="getRatingColorClass(stock.latest_rating)">
               {{ stock.latest_rating }}
             </div>
           </div>
@@ -135,7 +124,7 @@ export default defineComponent({
 
     onMounted(async () => {
       if (!stock.value && !loading.value) {
-        await stockStore.fetchAllStocks();
+        await stockStore.fetchStocks();
       }
     });
 
@@ -173,6 +162,7 @@ export default defineComponent({
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }

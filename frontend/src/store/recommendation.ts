@@ -8,7 +8,7 @@ export const useRecommendationStore = defineStore("recommendation", {
     loading: false,
     error: null as string | null,
     filters: {
-      limit: 5,
+      limit: 6,
       date_from: "",
       date_to: "",
       rating: "",
@@ -42,7 +42,7 @@ export const useRecommendationStore = defineStore("recommendation", {
     // Acción para limpiar todos los filtros
     clearFilters() {
       this.filters = {
-        limit: 5,
+        limit: 6,
         date_from: "",
         date_to: "",
         rating: "",
