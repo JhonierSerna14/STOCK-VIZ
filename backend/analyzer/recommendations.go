@@ -8,12 +8,7 @@ import (
 	"github.com/JhonierSerna14/STOCK-VIZ/models"
 )
 
-func (a *StockAnalyzer) GetTopRecommendations(limit int) ([]models.StockRecommendation, error) {
-	filter := models.RecommendationFilter{Limit: limit}
-	return a.GetFilteredRecommendations(filter, limit)
-}
-
-func (a *StockAnalyzer) GetFilteredRecommendations(filter models.RecommendationFilter, limit int) ([]models.StockRecommendation, error) {
+func (a *StockAnalyzer) GetFilteredRecommendations(filter models.RecommendationFilter) ([]models.StockRecommendation, error) {
 	stocks, err := a.repository.GetAllStocks()
 	if err != nil {
 		return nil, err
@@ -76,8 +71,8 @@ func (a *StockAnalyzer) GetFilteredRecommendations(filter models.RecommendationF
 	})
 
 	// Aplicar límite si es necesario
-	if limit > 0 && limit < len(recommendations) {
-		recommendations = recommendations[:limit]
+	if filter.Limit > 0 && filter.Limit < len(recommendations) {
+		recommendations = recommendations[:filter.Limit]
 	}
 
 	return recommendations, nil

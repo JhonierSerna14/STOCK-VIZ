@@ -13,10 +13,12 @@ import (
 
 // Config almacena la configuración de la aplicación
 type Config struct {
-	DatabaseURL  string
-	SyncInterval time.Duration
-	ServerPort   string
-	CORSSettings CORSConfig
+	DatabaseURL   string
+	SyncInterval  time.Duration
+	ServerPort    string
+	CORSSettings  CORSConfig
+	StockAPIToken string
+	BaseURL       string
 }
 
 // CORSConfig almacena la configuración de CORS
@@ -50,6 +52,18 @@ func LoadConfig() (*Config, error) {
 	// Obtener el intervalo de sincronización
 	syncInterval := getEnvSyncInterval()
 
+	//obtener stock api token
+	stockAPIToken := os.Getenv("STOCK_API_TOKEN")
+	if stockAPIToken == "" {
+		return nil, errors.New("STOCK_API_TOKEN is not set")
+	}
+
+	//obtener stock api base url
+	baseURL := os.Getenv("STOCK_API_BASE_URL")
+	if stockAPIToken == "" {
+		return nil, errors.New("STOCK_API_TOKEN is not set")
+	}
+
 	// Configurar CORS
 	corsConfig := CORSConfig{
 		AllowedOrigins:   []string{"*"}, // Permite cualquier origen
@@ -59,10 +73,12 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return &Config{
-		DatabaseURL:  databaseURL,
-		SyncInterval: syncInterval,
-		ServerPort:   serverPort,
-		CORSSettings: corsConfig,
+		DatabaseURL:   databaseURL,
+		SyncInterval:  syncInterval,
+		ServerPort:    serverPort,
+		CORSSettings:  corsConfig,
+		StockAPIToken: stockAPIToken,
+		BaseURL:       baseURL,
 	}, nil
 }
 

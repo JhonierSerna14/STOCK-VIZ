@@ -1,4 +1,4 @@
-package database
+package repository
 
 import (
 	"github.com/JhonierSerna14/STOCK-VIZ/models"

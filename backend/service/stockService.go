@@ -5,66 +5,51 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/JhonierSerna14/STOCK-VIZ/analyzer"
-	"github.com/JhonierSerna14/STOCK-VIZ/database"
 	"github.com/JhonierSerna14/STOCK-VIZ/models"
+	"github.com/JhonierSerna14/STOCK-VIZ/repository"
 )
 
+// StockService representa el servicio principal para gestionar stocks
 type StockService struct {
-	baseURL    string
-	token      string
-	repository *database.StockRepository
-	analyzer   *analyzer.StockAnalyzer
+	config   StockServiceConfig
+	analyzer *analyzer.StockAnalyzer
 }
 
-func NewStockService(repo *database.StockRepository) *StockService {
-	token := os.Getenv("STOCK_API_TOKEN")
-	if token == "" {
-		fmt.Println("Advertencia: STOCK_API_TOKEN no está configurado")
-	}
+// StockServiceConfig contiene la configuración necesaria para crear un StockService
+type StockServiceConfig struct {
+	Repository   *repository.StockRepository
+	SyncInterval time.Duration
+	APIToken     string
+	BaseURL      string
+}
 
-	baseURL := os.Getenv("STOCK_API_BASE_URL")
-	if baseURL == "" {
-		fmt.Println("Advertencia: STOCK_API_BASE_URL no está configurado")
-	}
-
+// NewStockService crea una nueva instancia de StockService con la configuración proporcionada
+func NewStockService(cfg StockServiceConfig) *StockService {
 	service := &StockService{
-		baseURL:    baseURL,
-		token:      token,
-		repository: repo,
+		config:   cfg,
+		analyzer: analyzer.NewStockAnalyzer(cfg.Repository),
 	}
 
-	service.analyzer = analyzer.NewStockAnalyzer(repo)
-	return service
-}
-
-// Método para crear un servicio con sincronización automática
-func NewStockServiceWithSync(repo *database.StockRepository, syncInterval time.Duration) *StockService {
-	service := NewStockService(repo)
-
-	// Iniciar la sincronización periódica
-	if syncInterval > 0 {
-		service.StartPeriodicSync(syncInterval)
-	}
+	service.StartPeriodicSync(cfg.SyncInterval)
 
 	return service
 }
 
+// GetStocks obtiene stocks de la API externa
 func (s *StockService) GetStocks(nextPage string) (*models.StockResponse, error) {
-	url := s.baseURL
+	url := s.config.BaseURL
 	if nextPage != "" {
 		url += "?next_page=" + nextPage
 	}
-
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Add("Authorization", "Bearer "+s.token)
+	req.Header.Add("Authorization", "Bearer "+s.config.APIToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -84,61 +69,29 @@ func (s *StockService) GetStocks(nextPage string) (*models.StockResponse, error)
 	}
 
 	// Guardar los datos en la base de datos
-	if err := s.repository.SaveStocks(stockResponse.Items); err != nil {
+	if err := s.config.Repository.SaveStocks(stockResponse.Items); err != nil {
 		return nil, fmt.Errorf("error guardando stocks: %v", err)
 	}
 
 	return &stockResponse, nil
 }
 
+// GetAllStocks obtiene todos los stocks de la base de datos
 func (s *StockService) GetAllStocks() ([]models.Stock, error) {
-	return s.repository.GetAllStocks()
+	return s.config.Repository.GetAllStocks()
 }
 
+// GetAllStocksPaginated obtiene stocks paginados
+func (s *StockService) GetAllStocksPaginated(page, limit int) ([]models.Stock, int64, error) {
+	return s.config.Repository.GetStocksPaginated(page, limit)
+}
+
+// DeleteAllStocks elimina todos los stocks de la base de datos
 func (s *StockService) DeleteAllStocks() error {
-	return s.repository.DeleteAllStocks()
+	return s.config.Repository.DeleteAllStocks()
 }
 
-func (s *StockService) GetRecommendations(filter models.RecommendationFilter) ([]models.StockRecommendation, error) {
-	// Si no se proporciona límite, usar valor por defecto
-	limit := filter.Limit
-	if limit <= 0 {
-		limit = 5
-	}
-
-	return s.analyzer.GetFilteredRecommendations(filter, limit)
-}
-
-// MigrateAllStocks recupera todos los stocks de la API externa
-// y los guarda en la base de datos local de forma recursiva,
-// hasta que ya no haya más páginas disponibles.
-func (s *StockService) MigrateAllStocks() (int, error) {
-	var nextPage string
-	var totalItems int
-
-	for {
-		stockResponse, err := s.GetStocks(nextPage)
-		if err != nil {
-			return totalItems, fmt.Errorf("error obteniendo stocks: %v", err)
-		}
-
-		// Contamos cuántos items hemos procesado
-		totalItems += len(stockResponse.Items)
-
-		// Si no hay más páginas, terminamos el proceso
-		if stockResponse.NextPage == "" {
-			break
-		}
-
-		// Preparamos la siguiente página
-		nextPage = stockResponse.NextPage
-	}
-
-	return totalItems, nil
-}
-
-// SyncStocksWithAPI sincroniza los stocks de la API externa con la base de datos local.
-// Devuelve el número de nuevos stocks añadidos.
+// SyncStocksWithAPI sincroniza los stocks con la API externa
 func (s *StockService) SyncStocksWithAPI() (int, error) {
 	var nextPage string
 	var totalNewItems int
@@ -149,26 +102,32 @@ func (s *StockService) SyncStocksWithAPI() (int, error) {
 			return totalNewItems, fmt.Errorf("error obteniendo stocks: %v", err)
 		}
 
-		// Contamos cuántos items hemos procesado
 		totalNewItems += len(stockResponse.Items)
 
-		// Si no hay más páginas, terminamos el proceso
 		if stockResponse.NextPage == "" {
 			break
 		}
 
-		// Preparamos la siguiente página
 		nextPage = stockResponse.NextPage
 	}
 
 	return totalNewItems, nil
 }
 
-// StartPeriodicSync inicia un proceso en segundo plano que sincroniza
-// periódicamente la base de datos local con la API externa.
+// StartPeriodicSync inicia la sincronización periódica
 func (s *StockService) StartPeriodicSync(interval time.Duration) {
-	ticker := time.NewTicker(interval)
+	// Iniciar sincronizaciones en segundo plano
 	go func() {
+		// Realizar la sincronización inicial inmediatamente
+		count, err := s.SyncStocksWithAPI()
+		if err != nil {
+			fmt.Printf("Error en la sincronización inicial: %v\n", err)
+		} else {
+			fmt.Printf("Sincronización inicial completada: %d stocks procesados\n", count)
+		}
+
+		// Configurar el ticker para sincronizaciones periódicas
+		ticker := time.NewTicker(interval)
 		for {
 			select {
 			case <-ticker.C:
@@ -176,15 +135,16 @@ func (s *StockService) StartPeriodicSync(interval time.Duration) {
 				if err != nil {
 					fmt.Printf("Error en la sincronización periódica: %v\n", err)
 				} else {
-					fmt.Printf("Sincronización completada: %d stocks procesados\n", count)
+					fmt.Printf("Sincronización periódica completada: %d stocks procesados\n", count)
 				}
 			}
 		}
 	}()
-	fmt.Printf("Sincronización periódica iniciada con intervalo de %v\n", interval)
+
+	fmt.Printf("Sincronización iniciada: primera sincronización en proceso, siguientes cada %v\n", interval)
 }
 
-// GetAllStocksPaginated obtiene stocks paginados de la base de datos
-func (s *StockService) GetAllStocksPaginated(page, limit int) ([]models.Stock, int64, error) {
-	return s.repository.GetStocksPaginated(page, limit)
+// GetRecommendations obtiene recomendaciones filtradas
+func (s *StockService) GetRecommendations(filter models.RecommendationFilter) ([]models.StockRecommendation, error) {
+	return s.analyzer.GetFilteredRecommendations(filter)
 }
