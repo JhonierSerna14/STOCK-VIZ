@@ -20,11 +20,7 @@ func (r *StockRepository) SaveStocks(stocks []models.Stock) error {
 			{Name: "ticker"},
 			{Name: "time"},
 		},
-		DoUpdates: clause.AssignmentColumns([]string{
-			"company", "brokerage", "action",
-			"rating_from", "rating_to",
-			"target_from", "target_to",
-		}),
+		DoNothing: true,
 	}).CreateInBatches(stocks, 100).Error
 }
 
@@ -58,4 +54,39 @@ func (r *StockRepository) GetStocksPaginated(page, limit int) ([]models.Stock, i
 	}
 
 	return stocks, total, nil
+}
+
+// GetFilteredStocks recupera stocks filtrados según los criterios especificados
+func (r *StockRepository) GetFilteredStocks(filter models.RecommendationFilter) ([]models.Stock, error) {
+	query := r.db.Model(&models.Stock{})
+
+	// Aplicar filtro por ticker
+	if filter.Ticker != "" {
+		query = query.Where("ticker = ?", filter.Ticker)
+	}
+
+	// Aplicar filtro por fechas
+	dateFrom, dateTo, err := filter.ParseDates()
+	if err != nil {
+		return nil, err
+	}
+
+	if dateFrom != nil {
+		query = query.Where("time >= ?", dateFrom)
+	}
+	if dateTo != nil {
+		query = query.Where("time <= ?", dateTo)
+	}
+
+	// Aplicar filtro por rating
+	if filter.Rating != "" {
+		query = query.Where("rating_to = ?", filter.Rating)
+	}
+
+	// Obtener los stocks filtrados
+	var stocks []models.Stock
+	if err := query.Find(&stocks).Error; err != nil {
+		return nil, err
+	}
+	return stocks, nil
 }

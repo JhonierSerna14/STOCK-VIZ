@@ -16,6 +16,7 @@ type StockAnalyzer struct {
 
 type StockRepository interface {
 	GetAllStocks() ([]models.Stock, error)
+	GetFilteredStocks(filter models.RecommendationFilter) ([]models.Stock, error)
 }
 
 func NewStockAnalyzer(repo StockRepository) *StockAnalyzer {
