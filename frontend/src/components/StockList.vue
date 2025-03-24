@@ -105,17 +105,33 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, computed } from "vue";
+import { defineComponent, onMounted, computed, watch, PropType } from "vue";
 import { useStockStore } from "@/store/stock";
 
 export default defineComponent({
   name: "StockList",
+  
+  props: {
+    searchQuery: {
+      type: String as PropType<string>,
+      default: ""
+    }
+  },
+  
+  emits: ['search'],
 
-  setup() {
+  setup(props, { emit }) {
     const stockStore = useStockStore();
 
     onMounted(async () => {
-      stockStore.fetchStocks();
+      await stockStore.fetchStocks(1, props.searchQuery);
+    });
+
+    // Observar cambios en la búsqueda y actualizar la lista cuando cambie
+    watch(() => props.searchQuery, (newQuery) => {
+      if (stockStore.currentSearchQuery !== newQuery) {
+        emit('search');
+      }
     });
 
     const getActionColorClass = (action: string) => {
@@ -198,11 +214,11 @@ export default defineComponent({
     };
 
     const nextPage = async () => {
-      await stockStore.nextPage();
+      await stockStore.fetchStocks(stockStore.currentPage + 1, props.searchQuery);
     };
 
     const prevPage = async () => {
-      await stockStore.prevPage();
+      await stockStore.fetchStocks(stockStore.currentPage - 1, props.searchQuery);
     };
 
     return {

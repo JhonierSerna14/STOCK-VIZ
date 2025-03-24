@@ -46,8 +46,10 @@ func (a *API) getStocks(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	query := r.URL.Query().Get("search")
+
 	// Llamar al servicio con los parámetros de paginación
-	stocks, total, err := a.stockService.GetAllStocksPaginated(page, limit)
+	stocks, total, err := a.stockService.GetAllStocksPaginated(page, limit, query)
 	if err != nil {
 		http.Error(w, "Error fetching stocks", http.StatusInternalServerError)
 		return

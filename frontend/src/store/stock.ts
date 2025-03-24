@@ -13,6 +13,7 @@ export const useStockStore = defineStore("stock", {
     } as Pagination,
     loading: false,
     error: null as string | null,
+    currentSearchQuery: "",
   }),
 
   getters: {
@@ -27,10 +28,11 @@ export const useStockStore = defineStore("stock", {
   },
 
   actions: {
-    async fetchStocks(page = 1) {
+    async fetchStocks(page = 1, search = "") {
       try {
         this.loading = true;
-        const response = await api.getStocks(page);
+        this.currentSearchQuery = search;
+        const response = await api.getStocks(page, search);
 
         if (response.items) {
           this.stocks = response.items;
@@ -50,19 +52,19 @@ export const useStockStore = defineStore("stock", {
 
     async goToPage(page: number) {
       if (page >= 1 && page <= this.pagination.total_pages) {
-        await this.fetchStocks(page);
+        await this.fetchStocks(page, this.currentSearchQuery);
       }
     },
 
     async nextPage() {
       if (this.pagination.current_page < this.pagination.total_pages) {
-        await this.fetchStocks(this.pagination.current_page + 1);
+        await this.fetchStocks(this.pagination.current_page + 1, this.currentSearchQuery);
       }
     },
 
     async prevPage() {
       if (this.pagination.current_page > 1) {
-        await this.fetchStocks(this.pagination.current_page - 1);
+        await this.fetchStocks(this.pagination.current_page - 1, this.currentSearchQuery);
       }
     },
   },

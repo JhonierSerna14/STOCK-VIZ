@@ -9,9 +9,9 @@ const apiClient = axios.create({
 });
 
 export default {
-  async getStocks(page = 1): Promise<StockResponse> {
+  async getStocks(page = 1, search = ""): Promise<StockResponse> {
     const response = await apiClient.get("/stocks/all", {
-      params: { page },
+      params: { page, search },
     });
     return response.data;
   },

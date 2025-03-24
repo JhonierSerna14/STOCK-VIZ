@@ -82,8 +82,8 @@ func (s *StockService) GetAllStocks() ([]models.Stock, error) {
 }
 
 // GetAllStocksPaginated obtiene stocks paginados
-func (s *StockService) GetAllStocksPaginated(page, limit int) ([]models.Stock, int64, error) {
-	return s.config.Repository.GetStocksPaginated(page, limit)
+func (s *StockService) GetAllStocksPaginated(page, limit int, query string) ([]models.Stock, int64, error) {
+	return s.config.Repository.GetStocksPaginated(page, limit, query)
 }
 
 // DeleteAllStocks elimina todos los stocks de la base de datos

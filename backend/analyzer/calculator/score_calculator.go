@@ -90,7 +90,7 @@ func (c *ScoreCalculator) calculateTargetScore(stock models.Stock) float64 {
 
 	// Normalizamos el cambio porcentual a un score entre 0 y 1
 	// Un cambio de -20% o menor es 0, un cambio de +20% o mayor es 1
-	score := (changePercent + 20) / 40
+	score := changePercent / 20
 	if score > 1.0 {
 		score = 1.0
 	} else if score < 0.0 {

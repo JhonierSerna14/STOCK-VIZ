@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"strings"
+
 	"github.com/JhonierSerna14/STOCK-VIZ/models"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -35,20 +37,27 @@ func (r *StockRepository) DeleteAllStocks() error {
 }
 
 // GetStocksPaginated recupera stocks con paginación
-func (r *StockRepository) GetStocksPaginated(page, limit int) ([]models.Stock, int64, error) {
+func (r *StockRepository) GetStocksPaginated(page, limit int, query string) ([]models.Stock, int64, error) {
 	var stocks []models.Stock
 	var total int64
 
 	// Calcular el offset basado en la página y el límite
 	offset := (page - 1) * limit
 
-	// Obtener total de registros
-	if err := r.db.Model(&models.Stock{}).Count(&total).Error; err != nil {
+	// Base de la consulta
+	dbQuery := r.db.Model(&models.Stock{})
+
+	if query != "" {
+		dbQuery = dbQuery.Where("LOWER(ticker) LIKE ? OR LOWER(company) LIKE ?", "%"+strings.ToLower(query)+"%", "%"+strings.ToLower(query)+"%")
+	}
+
+	// Obtener total de registros con el filtro aplicado
+	if err := dbQuery.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// Obtener registros paginados
-	result := r.db.Limit(limit).Offset(offset).Find(&stocks)
+	// Obtener registros paginados con el filtro aplicado
+	result := dbQuery.Limit(limit).Offset(offset).Find(&stocks)
 	if result.Error != nil {
 		return nil, 0, result.Error
 	}
