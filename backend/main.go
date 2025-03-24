@@ -7,6 +7,7 @@ import (
 	"github.com/JhonierSerna14/STOCK-VIZ/api"
 	"github.com/JhonierSerna14/STOCK-VIZ/config"
 	"github.com/JhonierSerna14/STOCK-VIZ/database"
+	"github.com/JhonierSerna14/STOCK-VIZ/repository"
 	"github.com/JhonierSerna14/STOCK-VIZ/server"
 	"github.com/JhonierSerna14/STOCK-VIZ/service"
 )
@@ -26,8 +27,13 @@ func main() {
 	}
 
 	// Inicializar el repositorio y servicio con sincronización automática
-	stockRepo := database.NewStockRepository(db)
-	stockService := service.NewStockServiceWithSync(stockRepo, cfg.SyncInterval)
+	stockRepo := repository.NewStockRepository(db)
+	stockService := service.NewStockService(service.StockServiceConfig{
+		Repository:   stockRepo,
+		SyncInterval: cfg.SyncInterval,
+		APIToken:     cfg.StockAPIToken,
+		BaseURL:      cfg.BaseURL,
+	})
 
 	// Inicializar la API con el servicio configurado
 	a := api.NewAPIWithService(stockService)

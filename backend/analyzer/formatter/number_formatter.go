@@ -19,9 +19,3 @@ func (f *NumberFormatter) ExtractNumber(value string) (float64, error) {
 	}
 	return num, nil
 }
-
-// NormalizeAction estandariza el formato de las acciones
-func (f *NumberFormatter) NormalizeAction(action string) string {
-	norm := strings.ToLower(strings.TrimSpace(action))
-	return strings.TrimSuffix(norm, " by")
-}

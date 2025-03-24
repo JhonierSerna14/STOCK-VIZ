@@ -15,15 +15,9 @@
             </p>
           </div>
           <div class="flex space-x-4">
-            <a href="#" class="hover:text-blue-300 transition-colors"
-              >Términos</a
-            >
-            <a href="#" class="hover:text-blue-300 transition-colors"
-              >Privacidad</a
-            >
-            <a href="#" class="hover:text-blue-300 transition-colors"
-              >Contacto</a
-            >
+            <a href="#" class="hover:text-blue-300 transition-colors">Términos</a>
+            <a href="#" class="hover:text-blue-300 transition-colors">Privacidad</a>
+            <a href="#" class="hover:text-blue-300 transition-colors">Contacto</a>
           </div>
         </div>
       </div>

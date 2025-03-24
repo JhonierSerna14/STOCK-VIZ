@@ -3,72 +3,21 @@ package analyzer
 
 import (
 	"sort"
-	"strings"
 
 	"github.com/JhonierSerna14/STOCK-VIZ/models"
 )
 
-func (a *StockAnalyzer) GetTopRecommendations(limit int) ([]models.StockRecommendation, error) {
-	filter := models.RecommendationFilter{Limit: limit}
-	return a.GetFilteredRecommendations(filter, limit)
-}
-
-func (a *StockAnalyzer) GetFilteredRecommendations(filter models.RecommendationFilter, limit int) ([]models.StockRecommendation, error) {
-	stocks, err := a.repository.GetAllStocks()
+func (a *StockAnalyzer) GetFilteredRecommendations(filter models.RecommendationFilter) ([]models.StockRecommendation, error) {
+	// Obtener stocks filtrados directamente de la base de datos
+	stocks, err := a.repository.GetFilteredStocks(filter)
 	if err != nil {
 		return nil, err
 	}
 
-	// Aplicar filtro por ticker si está especificado
-	if filter.Ticker != "" {
-		var filteredStocks []models.Stock
-		for _, stock := range stocks {
-			if stock.Ticker == filter.Ticker {
-				filteredStocks = append(filteredStocks, stock)
-			}
-		}
-		stocks = filteredStocks
-	}
-
-	// Aplicar filtro por fechas si están especificadas
-	dateFrom, dateTo, err := filter.ParseDates()
-	if err != nil {
-		return nil, err
-	}
-
-	if dateFrom != nil || dateTo != nil {
-		var filteredStocks []models.Stock
-		for _, stock := range stocks {
-			include := true
-
-			if dateFrom != nil && stock.Time.Before(*dateFrom) {
-				include = false
-			}
-
-			if dateTo != nil && stock.Time.After(*dateTo) {
-				include = false
-			}
-
-			if include {
-				filteredStocks = append(filteredStocks, stock)
-			}
-		}
-		stocks = filteredStocks
-	}
-
+	// Agrupar stocks por ticker
 	stockMap := a.groupStocksByTicker(stocks)
+	// Generar recomendaciones
 	recommendations := a.generateRecommendations(stockMap)
-
-	// Aplicar filtro por rating si está especificado
-	if filter.Rating != "" {
-		var filteredRecommendations []models.StockRecommendation
-		for _, rec := range recommendations {
-			if strings.EqualFold(rec.LatestRating, filter.Rating) {
-				filteredRecommendations = append(filteredRecommendations, rec)
-			}
-		}
-		recommendations = filteredRecommendations
-	}
 
 	// Ordenar por puntuación
 	sort.Slice(recommendations, func(i, j int) bool {
@@ -76,8 +25,8 @@ func (a *StockAnalyzer) GetFilteredRecommendations(filter models.RecommendationF
 	})
 
 	// Aplicar límite si es necesario
-	if limit > 0 && limit < len(recommendations) {
-		recommendations = recommendations[:limit]
+	if filter.Limit > 0 && filter.Limit < len(recommendations) {
+		recommendations = recommendations[:filter.Limit]
 	}
 
 	return recommendations, nil
@@ -86,6 +35,7 @@ func (a *StockAnalyzer) GetFilteredRecommendations(filter models.RecommendationF
 func (a *StockAnalyzer) generateRecommendations(stockMap map[string][]models.Stock) []models.StockRecommendation {
 	var recommendations []models.StockRecommendation
 
+	// Asegura que las recomendaciones más recientes estén primero
 	for ticker, stockHistory := range stockMap {
 		sort.Slice(stockHistory, func(i, j int) bool {
 			return stockHistory[i].Time.After(stockHistory[j].Time)

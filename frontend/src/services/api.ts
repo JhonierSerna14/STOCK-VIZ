@@ -9,39 +9,10 @@ const apiClient = axios.create({
 });
 
 export default {
-  async getStocks(page = 1): Promise<StockResponse> {
+  async getStocks(page = 1, search = ""): Promise<StockResponse> {
     const response = await apiClient.get("/stocks/all", {
-      params: { page },
+      params: { page, search },
     });
-
-    console.log("Respuesta del API:", response.data);
-
-    // Si la respuesta ya viene en el formato esperado
-    return response.data;
-  },
-
-  async getAllStocks(page = 1): Promise<Stock[]> {
-    const response = await apiClient.get("/stocks/all", {
-      params: { page },
-    });
-
-    console.log("Respuesta getAllStocks:", response.data);
-
-    // Si la respuesta tiene el nuevo formato con items
-    if (response.data && response.data.items) {
-      return response.data.items;
-    }
-
-    // Fallback para compatibilidad
-    if (Array.isArray(response.data)) {
-      return response.data;
-    }
-
-    return [];
-  },
-
-  async deleteAllStocks(): Promise<{ mensaje: string }> {
-    const response = await apiClient.delete("/stocks");
     return response.data;
   },
 

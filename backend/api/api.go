@@ -6,25 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/JhonierSerna14/STOCK-VIZ/database"
 	"github.com/JhonierSerna14/STOCK-VIZ/models"
 	"github.com/JhonierSerna14/STOCK-VIZ/service"
-	"gorm.io/gorm"
 )
 
 // API encapsula los controladores HTTP y servicios necesarios para manejar las solicitudes.
 type API struct {
 	// stockService gestiona la lógica de negocio relacionada con las acciones
 	stockService *service.StockService
-}
-
-// NewAPI crea y devuelve una nueva instancia de API configurada con la conexión a la base de datos.
-// Inicializa el repositorio y servicio de stocks para ser utilizados por los controladores.
-func NewAPI(db *gorm.DB) *API {
-	stockRepo := database.NewStockRepository(db)
-	return &API{
-		stockService: service.NewStockService(stockRepo),
-	}
 }
 
 // NewAPIWithService crea y devuelve una nueva instancia de API configurada con un servicio de stocks ya existente.
@@ -34,24 +23,9 @@ func NewAPIWithService(stockService *service.StockService) *API {
 	}
 }
 
-// getStocks maneja solicitudes GET para obtener stocks con paginación.
-// Acepta un parámetro de consulta 'next_page' para implementar paginación.
-func (a *API) getStocks(w http.ResponseWriter, r *http.Request) {
-	nextPage := r.URL.Query().Get("next_page")
-
-	stockResponse, err := a.stockService.GetStocks(nextPage)
-	if err != nil {
-		http.Error(w, "Error fetching stocks", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(stockResponse)
-}
-
-// getAllStocks maneja solicitudes GET para obtener todos los stocks con paginación opcional.
+// getStocks maneja solicitudes GET para obtener todos los stocks con paginación opcional.
 // Acepta parámetros de consulta 'page' y 'limit' para implementar paginación. GET /api/stocks/all?page=2&limit=20
-func (a *API) getAllStocks(w http.ResponseWriter, r *http.Request) {
+func (a *API) getStocks(w http.ResponseWriter, r *http.Request) {
 	// Obtener parámetros de paginación
 	pageStr := r.URL.Query().Get("page")
 	limitStr := r.URL.Query().Get("limit")
@@ -72,8 +46,10 @@ func (a *API) getAllStocks(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	query := r.URL.Query().Get("search")
+
 	// Llamar al servicio con los parámetros de paginación
-	stocks, total, err := a.stockService.GetAllStocksPaginated(page, limit)
+	stocks, total, err := a.stockService.GetAllStocksPaginated(page, limit, query)
 	if err != nil {
 		http.Error(w, "Error fetching stocks", http.StatusInternalServerError)
 		return
@@ -115,7 +91,7 @@ func (a *API) getRecommendations(w http.ResponseWriter, r *http.Request) {
 	// Obtener parámetros de filtrado
 	query := r.URL.Query()
 
-	// Parámetro de límite (por defecto 5)
+	// Parámetro de límite (por defecto 6)
 	limitStr := query.Get("limit")
 	limit := 6
 	if limitStr != "" {
@@ -151,21 +127,4 @@ func (a *API) getRecommendations(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(recommendations)
-}
-
-// migrateAllStocks maneja solicitudes POST para migrar todos los stocks
-// desde la API externa a la base de datos local.
-// Realiza llamadas recursivas hasta que no haya más páginas disponibles.
-func (a *API) migrateAllStocks(w http.ResponseWriter, r *http.Request) {
-	totalItems, err := a.stockService.MigrateAllStocks()
-	if err != nil {
-		http.Error(w, "Error migrando stocks: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"mensaje":     "Migración completada exitosamente",
-		"total_items": totalItems,
-	})
 }

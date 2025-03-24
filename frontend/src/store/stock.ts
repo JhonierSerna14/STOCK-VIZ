@@ -13,6 +13,7 @@ export const useStockStore = defineStore("stock", {
     } as Pagination,
     loading: false,
     error: null as string | null,
+    currentSearchQuery: "",
   }),
 
   getters: {
@@ -27,18 +28,17 @@ export const useStockStore = defineStore("stock", {
   },
 
   actions: {
-    async fetchStocks(page = 1) {
+    async fetchStocks(page = 1, search = "") {
       try {
         this.loading = true;
-        console.log(`Llamando a api.getStocks para página ${page}...`);
-        const response = await api.getStocks(page);
-        console.log("Respuesta recibida:", response);
+        this.currentSearchQuery = search;
+        const response = await api.getStocks(page, search);
 
         if (response.items) {
           this.stocks = response.items;
           this.pagination = response.pagination;
         } else {
-          console.log("Formato de respuesta no esperado");
+          console.error("Formato de respuesta no esperado");
         }
 
         this.error = null;
@@ -52,49 +52,19 @@ export const useStockStore = defineStore("stock", {
 
     async goToPage(page: number) {
       if (page >= 1 && page <= this.pagination.total_pages) {
-        await this.fetchStocks(page);
+        await this.fetchStocks(page, this.currentSearchQuery);
       }
     },
 
     async nextPage() {
       if (this.pagination.current_page < this.pagination.total_pages) {
-        await this.fetchStocks(this.pagination.current_page + 1);
+        await this.fetchStocks(this.pagination.current_page + 1, this.currentSearchQuery);
       }
     },
 
     async prevPage() {
       if (this.pagination.current_page > 1) {
-        await this.fetchStocks(this.pagination.current_page - 1);
-      }
-    },
-
-    async fetchAllStocks(page = 1) {
-      try {
-        this.loading = true;
-        console.log(`Llamando a api.getAllStocks para página ${page}...`);
-        const stocks = await api.getAllStocks(page);
-        console.log("Stocks recibidos en fetchAllStocks:", stocks.length);
-        this.stocks = stocks;
-        this.error = null;
-      } catch (error) {
-        console.error("Error detallado en fetchAllStocks:", error);
-        this.error = "Error al cargar todos los stocks";
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async deleteAllStocks() {
-      try {
-        this.loading = true;
-        await api.deleteAllStocks();
-        this.stocks = [];
-        this.error = null;
-      } catch (error) {
-        this.error = "Error al eliminar los stocks";
-        console.error(error);
-      } finally {
-        this.loading = false;
+        await this.fetchStocks(this.pagination.current_page - 1, this.currentSearchQuery);
       }
     },
   },

@@ -5,20 +5,16 @@ import (
 	"github.com/JhonierSerna14/STOCK-VIZ/analyzer/calculator"
 	"github.com/JhonierSerna14/STOCK-VIZ/analyzer/formatter"
 	"github.com/JhonierSerna14/STOCK-VIZ/analyzer/scoring"
-	"github.com/JhonierSerna14/STOCK-VIZ/models"
+	"github.com/JhonierSerna14/STOCK-VIZ/repository"
 )
 
 type StockAnalyzer struct {
-	repository StockRepository
+	repository *repository.StockRepository
 	calculator *calculator.ScoreCalculator
 	formatter  *formatter.NumberFormatter
 }
 
-type StockRepository interface {
-	GetAllStocks() ([]models.Stock, error)
-}
-
-func NewStockAnalyzer(repo StockRepository) *StockAnalyzer {
+func NewStockAnalyzer(repo *repository.StockRepository) *StockAnalyzer {
 	return &StockAnalyzer{
 		repository: repo,
 		calculator: calculator.NewScoreCalculator(scoring.DefaultWeights),

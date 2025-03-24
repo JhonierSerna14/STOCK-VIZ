@@ -1,6 +1,8 @@
 package calculator
 
 import (
+	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -51,10 +53,12 @@ func (c *ScoreCalculator) calculateRatingScore(history []models.Stock) float64 {
 
 	latestValue, ok1 := scoring.RatingMapping[latestRating]
 	if !ok1 {
+		logUnknownRating(latestRating)
 		latestValue = 0.5
 	}
 	previousValue, ok2 := scoring.RatingMapping[previousRating]
 	if !ok2 {
+		logUnknownRating(previousRating)
 		previousValue = 0.5
 	}
 
@@ -83,7 +87,10 @@ func (c *ScoreCalculator) calculateTargetScore(stock models.Stock) float64 {
 	}
 
 	changePercent := ((targetTo - targetFrom) / targetFrom) * 100
-	score := (changePercent + 20) / 40
+
+	// Normalizamos el cambio porcentual a un score entre 0 y 1
+	// Un cambio de -20% o menor es 0, un cambio de +20% o mayor es 1
+	score := changePercent / 20
 	if score > 1.0 {
 		score = 1.0
 	} else if score < 0.0 {
@@ -119,6 +126,7 @@ func (c *ScoreCalculator) calculateBrokerConsensus(history []models.Stock) float
 	var totalWeightedSentiment float64
 	var totalCount int
 	for _, entry := range brokerData {
+		// Calcula el promedio de sentimiento; Pesa por el número de recomendaciones
 		totalWeightedSentiment += (entry.sentimentSum / float64(entry.count)) * float64(entry.count)
 		totalCount += entry.count
 	}
@@ -126,7 +134,7 @@ func (c *ScoreCalculator) calculateBrokerConsensus(history []models.Stock) float
 	if totalCount == 0 {
 		return 0
 	}
-
+	//El score siempre esté normalizado entre 0 y 1
 	normalizedScore := (totalWeightedSentiment + float64(totalCount)) / (2 * float64(totalCount))
 	return normalizedScore
 }
@@ -134,6 +142,7 @@ func (c *ScoreCalculator) calculateBrokerConsensus(history []models.Stock) float
 // calculateRecencyScore evalúa la actualidad de la información
 func (c *ScoreCalculator) calculateRecencyScore(lastUpdate time.Time) float64 {
 	daysAgo := time.Since(lastUpdate).Hours() / 24
+	//función de decaimiento exponencial; el divisor 30.0 representa la "vida media" en días
 	score := 1.0 / (1.0 + (daysAgo / 30.0))
 	return score
 }
@@ -147,4 +156,20 @@ func extractNumber(value string) (float64, error) {
 	clean := strings.ReplaceAll(value, ",", "")
 	clean = strings.TrimSpace(strings.Replace(clean, "$", "", -1))
 	return strconv.ParseFloat(clean, 64)
+}
+
+// logUnknownRating registra un rating desconocido en el archivo de logs
+func logUnknownRating(rating string) {
+	f, err := os.OpenFile("logs/unknown_ratings.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
+	logEntry := fmt.Sprintf("%s - %s\n", timestamp, rating)
+
+	if _, err := f.WriteString(logEntry); err != nil {
+		return
+	}
 }

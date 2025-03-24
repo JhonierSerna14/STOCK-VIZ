@@ -5,10 +5,7 @@
       <p>Cargando actualizaciones de stocks...</p>
     </div>
 
-    <div
-      v-else-if="error"
-      class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded"
-    >
+    <div v-else-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
       {{ error }}
     </div>
 
@@ -18,11 +15,8 @@
 
     <div v-else>
       <div class="grid grid-cols-1 gap-4">
-        <div
-          v-for="stock in stocks"
-          :key="`${stock.ticker}-${stock.time}`"
-          class="border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow bg-white"
-        >
+        <div v-for="stock in stocks" :key="`${stock.ticker}-${stock.time}`"
+          class="border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow bg-white">
           <div class="flex justify-between items-start mb-4">
             <div>
               <h3 class="text-2xl font-bold text-blue-600">
@@ -31,10 +25,7 @@
               <p class="text-gray-600 text-lg">{{ stock.company }}</p>
             </div>
             <div class="text-right">
-              <span
-                class="px-3 py-1 rounded-full text-sm font-medium"
-                :class="getActionColorClass(stock.action)"
-              >
+              <span class="px-3 py-1 rounded-full text-sm font-medium" :class="getActionColorClass(stock.action)">
                 {{ formatAction(stock.action) }}
               </span>
             </div>
@@ -49,30 +40,15 @@
               <div>
                 <p class="text-sm text-gray-600 mb-1">Rating:</p>
                 <div class="flex items-center">
-                  <span
-                    class="px-2 py-1 rounded bg-gray-100 text-sm"
-                    :class="getRatingColorClass(stock.rating_from)"
-                  >
+                  <span class="px-2 py-1 rounded bg-gray-100 text-sm" :class="getRatingColorClass(stock.rating_from)">
                     {{ stock.rating_from }}
                   </span>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-4 w-4 mx-2 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M13 7l5 5m0 0l-5 5m5-5H6"
-                    />
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-2 text-gray-400" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
-                  <span
-                    class="px-2 py-1 rounded text-sm font-medium"
-                    :class="getRatingColorClass(stock.rating_to)"
-                  >
+                  <span class="px-2 py-1 rounded text-sm font-medium" :class="getRatingColorClass(stock.rating_to)">
                     {{ stock.rating_to }}
                   </span>
                 </div>
@@ -84,26 +60,13 @@
                   <span class="px-2 py-1 rounded bg-gray-100 text-sm">
                     {{ stock.target_from }}
                   </span>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-4 w-4 mx-2 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M13 7l5 5m0 0l-5 5m5-5H6"
-                    />
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-2 text-gray-400" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
-                  <span
-                    class="px-2 py-1 rounded text-sm font-medium"
-                    :class="
-                      getTargetChangeClass(stock.target_from, stock.target_to)
-                    "
-                  >
+                  <span class="px-2 py-1 rounded text-sm font-medium" :class="getTargetChangeClass(stock.target_from, stock.target_to)
+                    ">
                     {{ stock.target_to }}
                   </span>
                 </div>
@@ -122,12 +85,8 @@
           Mostrando {{ stocks.length }} de {{ totalItems }} resultados
         </div>
         <div class="flex space-x-2">
-          <button
-            @click="prevPage"
-            class="px-4 py-2 bg-gray-200 rounded-md disabled:opacity-50"
-            :disabled="!hasPrevPage"
-            :class="{ 'hover:bg-gray-300': hasPrevPage }"
-          >
+          <button @click="prevPage" class="px-4 py-2 bg-gray-200 rounded-md disabled:opacity-50"
+            :disabled="!hasPrevPage" :class="{ 'hover:bg-gray-300': hasPrevPage }">
             Anterior
           </button>
 
@@ -135,12 +94,8 @@
             <span>{{ currentPage }} de {{ totalPages }}</span>
           </div>
 
-          <button
-            @click="nextPage"
-            class="px-4 py-2 bg-gray-200 rounded-md disabled:opacity-50"
-            :disabled="!hasNextPage"
-            :class="{ 'hover:bg-gray-300': hasNextPage }"
-          >
+          <button @click="nextPage" class="px-4 py-2 bg-gray-200 rounded-md disabled:opacity-50"
+            :disabled="!hasNextPage" :class="{ 'hover:bg-gray-300': hasNextPage }">
             Siguiente
           </button>
         </div>
@@ -150,37 +105,41 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, computed } from "vue";
+import { defineComponent, onMounted, computed, watch, PropType } from "vue";
 import { useStockStore } from "@/store/stock";
 
 export default defineComponent({
   name: "StockList",
+  
+  props: {
+    searchQuery: {
+      type: String as PropType<string>,
+      default: ""
+    }
+  },
+  
+  emits: ['search'],
 
-  setup() {
+  setup(props, { emit }) {
     const stockStore = useStockStore();
 
     onMounted(async () => {
-      try {
-        console.log("Iniciando carga de stocks...");
-        await stockStore.fetchStocks();
-        console.log("Stocks cargados:", stockStore.stocks);
-        console.log("Cantidad de stocks:", stockStore.stocks.length);
-        if (stockStore.stocks.length > 0) {
-          console.log("Primer stock:", stockStore.stocks[0]);
-        }
-        console.log("Estado de carga:", stockStore.loading);
-        console.log("Errores:", stockStore.error);
-      } catch (error) {
-        console.error("Error al cargar los stocks:", error);
+      await stockStore.fetchStocks(1, props.searchQuery);
+    });
+
+    // Observar cambios en la búsqueda y actualizar la lista cuando cambie
+    watch(() => props.searchQuery, (newQuery) => {
+      if (stockStore.currentSearchQuery !== newQuery) {
+        emit('search');
       }
     });
 
     const getActionColorClass = (action: string) => {
       const actionLower = action.toLowerCase();
-      if (actionLower.includes("upgraded")) {
+      if (actionLower.includes("upgraded") || actionLower.includes("raised")) {
         return "bg-green-100 text-green-800";
       }
-      if (actionLower.includes("downgraded")) {
+      if (actionLower.includes("downgraded") || actionLower.includes("lowered")) {
         return "bg-red-100 text-red-800";
       }
       if (actionLower.includes("reiterated")) {
@@ -255,11 +214,11 @@ export default defineComponent({
     };
 
     const nextPage = async () => {
-      await stockStore.nextPage();
+      await stockStore.fetchStocks(stockStore.currentPage + 1, props.searchQuery);
     };
 
     const prevPage = async () => {
-      await stockStore.prevPage();
+      await stockStore.fetchStocks(stockStore.currentPage - 1, props.searchQuery);
     };
 
     return {
@@ -298,6 +257,7 @@ export default defineComponent({
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
