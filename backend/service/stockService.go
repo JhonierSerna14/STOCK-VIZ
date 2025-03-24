@@ -56,7 +56,11 @@ func (s *StockService) GetStocks(nextPage string) (*models.StockResponse, error)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			return
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

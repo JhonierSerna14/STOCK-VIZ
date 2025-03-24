@@ -60,7 +60,7 @@ func LoadConfig() (*Config, error) {
 
 	//obtener stock api base url
 	baseURL := os.Getenv("STOCK_API_BASE_URL")
-	if stockAPIToken == "" {
+	if baseURL == "" {
 		return nil, errors.New("STOCK_API_TOKEN is not set")
 	}
 

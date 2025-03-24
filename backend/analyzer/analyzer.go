@@ -1,4 +1,4 @@
-// Contiene la estructura principal y sus métodos básicos
+// analyzer contiene la estructura principal y sus métodos básicos
 package analyzer
 
 import (

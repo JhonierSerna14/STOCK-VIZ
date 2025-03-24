@@ -67,7 +67,11 @@ func (a *API) getStocks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // deleteAllStocks maneja solicitudes DELETE para eliminar todos los stocks de la base de datos.
@@ -80,9 +84,13 @@ func (a *API) deleteAllStocks(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	err := json.NewEncoder(w).Encode(map[string]string{
 		"mensaje": "Todos los stocks han sido eliminados exitosamente",
 	})
+	if err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
 }
 
 // getRecommendations maneja solicitudes GET para obtener recomendaciones analizadas.
@@ -126,5 +134,9 @@ func (a *API) getRecommendations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(recommendations)
+	err = json.NewEncoder(w).Encode(recommendations)
+	if err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
 }
