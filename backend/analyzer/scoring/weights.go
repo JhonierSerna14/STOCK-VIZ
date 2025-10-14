@@ -11,9 +11,9 @@ type FactorWeights struct {
 
 // DefaultWeights proporciona los pesos recalibrados con análisis temporal
 var DefaultWeights = FactorWeights{
-	Rating:      0.30, // Reducido para dar espacio a tendencias
-	Target:      0.25, // Reducido para dar espacio a tendencias de target
-	TargetTrend: 0.20, // Nuevo: tendencia histórica de precios objetivo
-	Volatility:  0.15, // Nuevo: consistencia de recomendaciones
-	Recency:     0.10, // Mantiene importancia de actualidad
+	Rating:      0.30,
+	Target:      0.25,
+	TargetTrend: 0.20,
+	Volatility:  0.15,
+	Recency:     0.10,
 }
