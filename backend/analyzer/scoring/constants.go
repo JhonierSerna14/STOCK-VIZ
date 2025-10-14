@@ -44,36 +44,7 @@ var RatingMapping = map[string]float64{
 	"weak hold":   0.15,
 	"sell":        0.10,
 	"strong sell": 0.00,
-}
 
-// ActionSentimentMapping asigna acciones de brokers a valores de sentimiento
-// Valores: 1.0 (positivo), 0.0 (neutral), -1.0 (negativo)
-var ActionSentimentMapping = map[string]float64{
-	// Acciones positivas
-	"upgraded":         1.0,
-	"upgraded by":      1.0,
-	"target raised":    1.0,
-	"target raised by": 1.0,
-	"initiated":        1.0,
-	"initiated by":     1.0,
-	"target set":       0.5,
-	"target set by":    0.5,
-	"raised":           1.0,
-	"improve":          1.0,
-
-	// Acciones neutrales
-	"reiterated":    0.0,
-	"reiterated by": 0.0,
-	"maintained":    0.0,
-	"confirmed":     0.0,
-	"unchanged":     0.0,
-
-	// Acciones negativas
-	"downgraded":        -1.0,
-	"downgraded by":     -1.0,
-	"target lowered":    -1.0,
-	"target lowered by": -1.0,
-	"lowered":           -1.0,
-	"reduced":           -1.0,
-	"suspended":         -1.0,
+	// Calificaciones no reconocidas o faltantes
+	"unknown": 0.50,
 }
