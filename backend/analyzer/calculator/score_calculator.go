@@ -41,11 +41,11 @@ func (c *ScoreCalculator) CalculateScore(stockHistory []models.Stock) float64 {
 	volatilityScore := c.calculateVolatilityScore(stockHistory)
 	recencyScore := c.calculateRecencyScore(latestStock.Time)
 
-	return (ratingScore*c.weights.Rating +
-		targetScore*c.weights.Target +
-		targetTrendScore*c.weights.TargetTrend +
-		volatilityScore*c.weights.Volatility +
-		recencyScore*c.weights.Recency) * 100
+	return ((ratingScore * c.weights.Rating) +
+		(targetScore * c.weights.Target) +
+		(targetTrendScore * c.weights.TargetTrend) +
+		(volatilityScore * c.weights.Volatility) +
+		(recencyScore * c.weights.Recency)) * 100
 }
 
 // calculateRatingScore evalúa la recomendación basada en ratings con análisis de tendencias históricas
@@ -59,17 +59,15 @@ func (c *ScoreCalculator) calculateRatingScore(history []models.Stock) float64 {
 
 	latestValue, ok := scoring.RatingMapping[latestRating]
 	if !ok && latestRating != "" {
+		// loguear rating desconocido para revisión futura
 		logUnknownRating(latestRating)
-		latestValue = 0.5
+		latestValue = scoring.RatingMapping["unknown"]
 	}
 
 	// Analizar tendencia histórica de ratings (últimos 6 meses)
 	trendBonus := c.calculateRatingTrend(history)
 
-	// Analizar consistencia del rating actual
-	consistencyBonus := c.calculateRatingConsistency(history, latestValue)
-
-	score := latestValue + trendBonus + consistencyBonus
+	score := latestValue + trendBonus
 
 	// Normalizar entre 0 y 1
 	if score > 1.0 {
@@ -84,7 +82,7 @@ func (c *ScoreCalculator) calculateRatingScore(history []models.Stock) float64 {
 // calculateRatingTrend analiza la tendencia de mejora/deterioro en los ratings históricos
 func (c *ScoreCalculator) calculateRatingTrend(history []models.Stock) float64 {
 	if len(history) < 3 {
-		return 0 // Necesitamos al menos 3 puntos para establecer una tendencia
+		return c.calculateImmediateChange(history)
 	}
 
 	// Analizar últimos 6 meses o hasta 10 registros
@@ -109,10 +107,11 @@ func (c *ScoreCalculator) calculateRatingTrend(history []models.Stock) float64 {
 	}
 
 	if len(ratingValues) < 3 {
-		return 0
+		return c.calculateImmediateChange(history)
 	}
 
 	// Calcular tendencia usando regresión lineal simple
+	// y = (n * Σ(xy) - Σx * Σy) / (n * Σ(x²) - (Σx)²)
 	n := float64(len(ratingValues))
 	var sumX, sumY, sumXY, sumX2 float64
 
@@ -132,39 +131,30 @@ func (c *ScoreCalculator) calculateRatingTrend(history []models.Stock) float64 {
 
 	return trendBonus
 }
+func (c *ScoreCalculator) calculateImmediateChange(history []models.Stock) float64 {
+	// Si no hay suficientes puntos, usar el cambio inmediato
+	if len(history) >= 1 {
+		latest := history[0]
+		latestRating := strings.ToLower(latest.RatingTo)
+		previousRating := strings.ToLower(latest.RatingFrom)
 
-// calculateRatingConsistency evalúa qué tan consistente ha sido el rating actual
-func (c *ScoreCalculator) calculateRatingConsistency(history []models.Stock, currentRating float64) float64 {
-	if len(history) < 2 {
-		return 0
-	}
-
-	// Contar cuántas veces aparece el rating actual en los últimos registros
-	threeMonthsAgo := time.Now().AddDate(0, -3, 0)
-	var sameRatingCount, totalCount int
-
-	for _, stock := range history {
-		if stock.Time.Before(threeMonthsAgo) {
-			break
+		latestValue, ok1 := scoring.RatingMapping[latestRating]
+		if !ok1 {
+			logUnknownRating(latestRating)
+			latestValue = scoring.RatingMapping["unknown"]
 		}
 
-		rating := strings.ToLower(stock.RatingTo)
-		if value, exists := scoring.RatingMapping[rating]; exists {
-			totalCount++
-			if math.Abs(value-currentRating) < 0.1 { // Tolerancia para ratings similares
-				sameRatingCount++
-			}
+		previousValue, ok2 := scoring.RatingMapping[previousRating]
+		if !ok2 {
+			logUnknownRating(previousRating)
+			previousValue = scoring.RatingMapping["unknown"]
 		}
+
+		// Bonus basado en el cambio inmediato
+		immediateChange := latestValue - previousValue
+		return math.Max(-0.15, math.Min(0.15, immediateChange))
 	}
-
-	if totalCount < 2 {
-		return 0
-	}
-
-	consistencyRatio := float64(sameRatingCount) / float64(totalCount)
-
-	// Bonus por consistencia: hasta +0.1 si el rating es muy consistente
-	return (consistencyRatio - 0.5) * 0.2 // Rango: -0.1 a +0.1
+	return 0 // Si no hay datos suficientes, retornar 0
 }
 
 // calculateTargetScore evalúa el cambio en el precio objetivo
@@ -199,7 +189,6 @@ func (c *ScoreCalculator) calculateTargetTrendScore(history []models.Stock) floa
 	}
 
 	var targetChanges []float64
-	var validTargets []float64
 	sixMonthsAgo := time.Now().AddDate(0, -6, 0)
 
 	for _, stock := range history {
@@ -213,7 +202,6 @@ func (c *ScoreCalculator) calculateTargetTrendScore(history []models.Stock) floa
 		if errFrom == nil && errTo == nil && targetFrom > 0 && targetTo > 0 {
 			change := (targetTo - targetFrom) / targetFrom
 			targetChanges = append(targetChanges, change)
-			validTargets = append(validTargets, targetTo)
 		}
 	}
 
@@ -236,12 +224,27 @@ func (c *ScoreCalculator) calculateTargetTrendScore(history []models.Stock) floa
 		}
 	}
 
+	// Proporción de cambios positivos significativos en relación con el total de cambios
+	// Calcula el porcentaje de cambios positivos significativos en los precios objetivo.
+	// Este valor se utiliza para medir la consistencia en la dirección de los cambios.
+	// Un valor mayor a 0.5 indica que más de la mitad de los cambios son positivos.
 	positiveRatio := float64(positiveChanges) / float64(len(targetChanges))
 
 	// Combinar tendencia promedio y consistencia
-	trendScore := 0.5 + (avgChange * 2.5)           // Normalizar cambio promedio
-	consistencyBonus := (positiveRatio - 0.5) * 0.3 // Bonus por consistencia
+	// Calcula un puntaje basado en la tendencia promedio de los cambios y la consistencia en la dirección de los mismos.
+	// Escala el impacto de la tendencia promedio para que tenga un peso significativo en el puntaje final.
+	// El valor base es 0.5, y se ajusta según el promedio de los cambios (avgChange).
+	trendScore := 0.5 + (avgChange * 2.5)
 
+	// Calcula un bonus o penalización basado en la consistencia de los cambios positivos.
+	// Si más del 50% de los cambios son positivos (positiveRatio > 0.5), se otorga un bonus positivo.
+	// Si menos del 50% de los cambios son positivos (positiveRatio < 0.5), se aplica una penalización.
+	// El impacto del bonus está limitado a un rango de [-0.15, +0.15].
+	consistencyBonus := (positiveRatio - 0.5) * 0.3
+
+	// Puntaje final que combina la tendencia promedio y la consistencia.
+	// Este valor representa una evaluación equilibrada de la evolución histórica de los precios objetivo.
+	// Se suma el puntaje de la tendencia (trendScore) con el bonus de consistencia (consistencyBonus).
 	finalScore := trendScore + consistencyBonus
 
 	// Normalizar entre 0 y 1
@@ -280,19 +283,32 @@ func (c *ScoreCalculator) calculateVolatilityScore(history []models.Stock) float
 	}
 
 	// Calcular volatilidad (desviación estándar)
+	// La volatilidad mide la dispersión de los valores de los ratings en relación con su promedio.
+	// Se calcula utilizando la desviación estándar, que es la raíz cuadrada de la varianza.
+	// Fórmula de la varianza:
+	// variance = Σ((xᵢ - mean)²) / n
+	// Fórmula de la desviación estándar:
+	// volatility = √variance
+
+	// Calcular la media (mean) de los valores de los ratings
 	var mean float64
 	for _, value := range ratingValues {
 		mean += value
 	}
-	mean /= float64(len(ratingValues))
+	mean /= float64(len(ratingValues)) // mean = Σ(xᵢ) / n
 
+	// Calcular la varianza (variance)
+	// La varianza mide el promedio de las diferencias al cuadrado entre cada valor y la media.
 	var variance float64
 	for _, value := range ratingValues {
-		diff := value - mean
-		variance += diff * diff
+		diff := value - mean    // Diferencia entre el valor actual y la media
+		variance += diff * diff // Sumar el cuadrado de la diferencia
 	}
-	variance /= float64(len(ratingValues))
-	volatility := math.Sqrt(variance)
+	variance /= float64(len(ratingValues)) // variance = Σ((xᵢ - mean)²) / n
+
+	// Calcular la desviación estándar (volatilidad)
+	// La desviación estándar es la raíz cuadrada de la varianza.
+	volatility := math.Sqrt(variance) // volatility = √variance
 
 	// Convertir volatilidad a score: menor volatilidad = mayor score
 	// Volatilidad típica está entre 0 y 0.3, normalizamos inversamente
@@ -319,11 +335,6 @@ func (c *ScoreCalculator) calculateRecencyScore(lastUpdate time.Time) float64 {
 	//función de decaimiento exponencial; el divisor 30.0 representa la "vida media" en días
 	score := 1.0 / (1.0 + (daysAgo / 30.0))
 	return score
-}
-
-// Funciones auxiliares
-func normalizeAction(action string) string {
-	return strings.ToLower(strings.TrimSpace(action))
 }
 
 func extractNumber(value string) (float64, error) {
