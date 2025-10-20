@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/JhonierSerna14/STOCK-VIZ/analyzer"
+	"github.com/JhonierSerna14/STOCK-VIZ/interfaces"
 	"github.com/JhonierSerna14/STOCK-VIZ/models"
-	"github.com/JhonierSerna14/STOCK-VIZ/repository"
 )
 
 // StockService representa el servicio principal para gestionar stocks
@@ -20,7 +20,7 @@ type StockService struct {
 
 // StockServiceConfig contiene la configuración necesaria para crear un StockService
 type StockServiceConfig struct {
-	Repository   *repository.StockRepository
+	Repository   interfaces.StockRepositoryInterface
 	SyncInterval time.Duration
 	APIToken     string
 	BaseURL      string

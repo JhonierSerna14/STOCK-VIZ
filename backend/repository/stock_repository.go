@@ -3,6 +3,7 @@ package repository
 import (
 	"strings"
 
+	"github.com/JhonierSerna14/STOCK-VIZ/interfaces"
 	"github.com/JhonierSerna14/STOCK-VIZ/models"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -11,6 +12,9 @@ import (
 type StockRepository struct {
 	db *gorm.DB
 }
+
+// Ensure StockRepository implements the interface
+var _ interfaces.StockRepositoryInterface = (*StockRepository)(nil)
 
 func NewStockRepository(db *gorm.DB) *StockRepository {
 	return &StockRepository{db: db}
