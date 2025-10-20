@@ -35,8 +35,8 @@ func (a *StockAnalyzer) GetFilteredRecommendations(filter models.RecommendationF
 func (a *StockAnalyzer) generateRecommendations(stockMap map[string][]models.Stock) []models.StockRecommendation {
 	var recommendations []models.StockRecommendation
 
-	// Asegura que las recomendaciones más recientes estén primero
 	for ticker, stockHistory := range stockMap {
+		// Asegurar orden cronológico descendente
 		sort.Slice(stockHistory, func(i, j int) bool {
 			return stockHistory[i].Time.After(stockHistory[j].Time)
 		})

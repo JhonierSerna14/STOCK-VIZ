@@ -1,2 +1,6 @@
 .env 
 .log
+.vscode
+.idea/
+*.log
+../Bearer/

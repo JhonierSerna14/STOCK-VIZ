@@ -10,28 +10,59 @@ import (
 // generateRationale construye una explicación detallada del análisis realizado,
 // incluyendo estadísticas clave y cambios significativos en las recomendaciones.
 func (a *StockAnalyzer) generateRationale(stockHistory []models.Stock) string {
-	latest := stockHistory[0]
-	brokerCount := len(stockHistory)
+	if len(stockHistory) == 0 {
+		return "Sin datos históricos disponibles para análisis"
+	}
 
+	latest := stockHistory[0]
+
+	// Manejar brokerage vacío
+	brokerage := latest.Brokerage
+	if brokerage == "" {
+		brokerage = "fuente no especificada"
+	}
+
+	// Manejar acción vacía
+	action := latest.Action
+	if action == "" {
+		action = "acción no especificada"
+	}
+
+	// Manejar ratings vacíos
+	ratingFrom := latest.RatingFrom
+	if ratingFrom == "" {
+		ratingFrom = "sin rating previo"
+	}
+
+	ratingTo := latest.RatingTo
+	if ratingTo == "" {
+		ratingTo = "rating no especificado"
+	}
+
+	// Manejar precios objetivo
 	targetFrom, errFrom := a.formatter.ExtractNumber(latest.TargetFrom)
 	targetTo, errTo := a.formatter.ExtractNumber(latest.TargetTo)
-	targetChange := ""
+
+	targetText := ""
 	if errFrom == nil && errTo == nil && targetFrom > 0 && targetTo > 0 {
 		changePercent := ((targetTo - targetFrom) / targetFrom) * 100
-		targetChange = fmt.Sprintf(" (cambio de %.2f%%)", changePercent)
+		targetText = fmt.Sprintf("Precio objetivo actualizado de $%.2f a $%.2f (cambio de %.2f%%).",
+			targetFrom, targetTo, changePercent)
+	} else if errTo == nil && targetTo > 0 {
+		targetText = fmt.Sprintf("Precio objetivo establecido en $%.2f.", targetTo)
+	} else {
+		targetText = "Precio objetivo no disponible."
 	}
 
 	return fmt.Sprintf(
-		"Análisis basado en %d recomendaciones de brokers. "+
+		"Análisis basado en %d recomendaciones. "+
 			"Última actualización por %s con acción '%s', cambiando calificación de '%s' a '%s'. "+
-			"Precio objetivo actualizado de $%.2f a $%.2f%s",
-		brokerCount,
-		latest.Brokerage,
-		latest.Action,
-		latest.RatingFrom,
-		latest.RatingTo,
-		targetFrom,
-		targetTo,
-		targetChange,
+			"%s",
+		len(stockHistory),
+		brokerage,
+		action,
+		ratingFrom,
+		ratingTo,
+		targetText,
 	)
 }

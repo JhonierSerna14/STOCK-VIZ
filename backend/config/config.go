@@ -33,8 +33,7 @@ type CORSConfig struct {
 func LoadConfig() (*Config, error) {
 	// Cargar variables de entorno desde el archivo .env
 	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: Error cargando archivo .env: %v\n", err)
-		// Continuamos incluso si no hay archivo .env, ya que las variables pueden estar configuradas directamente en el entorno
+		return nil, errors.New("error cargando archivo .env")
 	}
 
 	// Obtener la URL de la base de datos
@@ -61,7 +60,7 @@ func LoadConfig() (*Config, error) {
 	//obtener stock api base url
 	baseURL := os.Getenv("STOCK_API_BASE_URL")
 	if baseURL == "" {
-		return nil, errors.New("STOCK_API_TOKEN is not set")
+		return nil, errors.New("STOCK_API_BASE_URL is not set")
 	}
 
 	// Configurar CORS

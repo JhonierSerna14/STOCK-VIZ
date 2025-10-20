@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/JhonierSerna14/STOCK-VIZ/analyzer"
+	"github.com/JhonierSerna14/STOCK-VIZ/interfaces"
 	"github.com/JhonierSerna14/STOCK-VIZ/models"
-	"github.com/JhonierSerna14/STOCK-VIZ/repository"
 )
 
 // StockService representa el servicio principal para gestionar stocks
@@ -20,7 +20,7 @@ type StockService struct {
 
 // StockServiceConfig contiene la configuración necesaria para crear un StockService
 type StockServiceConfig struct {
-	Repository   *repository.StockRepository
+	Repository   interfaces.StockRepositoryInterface
 	SyncInterval time.Duration
 	APIToken     string
 	BaseURL      string
@@ -61,6 +61,9 @@ func (s *StockService) GetStocks(nextPage string) (*models.StockResponse, error)
 			return
 		}
 	}()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("error en la solicitud: código de estado %d", resp.StatusCode)
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -132,15 +135,13 @@ func (s *StockService) StartPeriodicSync(interval time.Duration) {
 
 		// Configurar el ticker para sincronizaciones periódicas
 		ticker := time.NewTicker(interval)
-		for {
-			select {
-			case <-ticker.C:
-				count, err := s.SyncStocksWithAPI()
-				if err != nil {
-					fmt.Printf("Error en la sincronización periódica: %v\n", err)
-				} else {
-					fmt.Printf("Sincronización periódica completada: %d stocks procesados\n", count)
-				}
+		defer ticker.Stop()
+		for range ticker.C {
+			count, err := s.SyncStocksWithAPI()
+			if err != nil {
+				fmt.Printf("Error en la sincronización periódica: %v\n", err)
+			} else {
+				fmt.Printf("Sincronización periódica completada: %d stocks procesados\n", count)
 			}
 		}
 	}()
