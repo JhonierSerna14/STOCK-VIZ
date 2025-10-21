@@ -1,0 +1,135 @@
+basePath: /api
+definitions:
+  models.StockRecommendation:
+    properties:
+      analysis_rationale:
+        description: Explicación del análisis
+        type: string
+      company:
+        description: Nombre de la empresa
+        type: string
+      last_updated:
+        description: Fecha de última actualización
+        type: string
+      latest_rating:
+        description: Última calificación asignada
+        type: string
+      latest_target:
+        description: Último precio objetivo
+        type: string
+      score:
+        description: Puntuación calculada (0-100)
+        type: number
+      ticker:
+        description: Símbolo de la acción
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API para análisis y visualización de stocks
+  title: Stock-Viz API
+  version: "1.0"
+paths:
+  /recommendations:
+    get:
+      consumes:
+      - application/json
+      description: Retorna recomendaciones de stocks basadas en análisis
+      parameters:
+      - default: 6
+        description: Cantidad de recomendaciones
+        in: query
+        name: limit
+        type: integer
+      - description: Fecha inicial (YYYY-MM-DD)
+        in: query
+        name: date_from
+        type: string
+      - description: Fecha final (YYYY-MM-DD)
+        in: query
+        name: date_to
+        type: string
+      - description: Tipo de rating (BUY, SELL, HOLD)
+        in: query
+        name: rating
+        type: string
+      - description: Símbolo de la acción
+        in: query
+        name: ticker
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lista de recomendaciones
+          schema:
+            items:
+              $ref: '#/definitions/models.StockRecommendation'
+            type: array
+        "500":
+          description: Error al analizar stocks
+          schema:
+            type: string
+      summary: Obtener recomendaciones de stocks
+      tags:
+      - recommendations
+  /stocks/all:
+    delete:
+      consumes:
+      - application/json
+      description: Elimina permanentemente todos los stocks de la base de datos
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Mensaje de confirmación
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Error al eliminar stocks
+          schema:
+            type: string
+      summary: Eliminar todos los stocks
+      tags:
+      - stocks
+    get:
+      consumes:
+      - application/json
+      description: Retorna una lista paginada de todos los stocks disponibles
+      parameters:
+      - default: 1
+        description: Número de página
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Cantidad de registros por página
+        in: query
+        name: limit
+        type: integer
+      - description: Término de búsqueda
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lista de stocks con paginación
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Error al obtener stocks
+          schema:
+            type: string
+      summary: Obtener todos los stocks
+      tags:
+      - stocks
+schemes:
+- http
+- https
+swagger: "2.0"

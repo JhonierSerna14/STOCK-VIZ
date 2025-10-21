@@ -25,6 +25,18 @@ func NewAPIWithService(stockService *service.StockService) *API {
 
 // getStocks maneja solicitudes GET para obtener todos los stocks con paginación opcional.
 // Acepta parámetros de consulta 'page' y 'limit' para implementar paginación. GET /api/stocks/all?page=2&limit=20
+//
+// @Summary Obtener todos los stocks
+// @Description Retorna una lista paginada de todos los stocks disponibles
+// @Tags stocks
+// @Accept json
+// @Produce json
+// @Param page query int false "Número de página" default(1)
+// @Param limit query int false "Cantidad de registros por página" default(20)
+// @Param search query string false "Término de búsqueda"
+// @Success 200 {object} map[string]interface{} "Lista de stocks con paginación"
+// @Failure 500 {string} string "Error al obtener stocks"
+// @Router /stocks/all [get]
 func (a *API) getStocks(w http.ResponseWriter, r *http.Request) {
 	// Obtener parámetros de paginación
 	pageStr := r.URL.Query().Get("page")
@@ -76,6 +88,15 @@ func (a *API) getStocks(w http.ResponseWriter, r *http.Request) {
 
 // deleteAllStocks maneja solicitudes DELETE para eliminar todos los stocks de la base de datos.
 // Devuelve un mensaje de confirmación cuando la operación es exitosa.
+//
+// @Summary Eliminar todos los stocks
+// @Description Elimina permanentemente todos los stocks de la base de datos
+// @Tags stocks
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]string "Mensaje de confirmación"
+// @Failure 500 {string} string "Error al eliminar stocks"
+// @Router /stocks/all [delete]
 func (a *API) deleteAllStocks(w http.ResponseWriter, r *http.Request) {
 	if err := a.stockService.DeleteAllStocks(); err != nil {
 		http.Error(w, "Error al borrar los stocks", http.StatusInternalServerError)
@@ -95,6 +116,20 @@ func (a *API) deleteAllStocks(w http.ResponseWriter, r *http.Request) {
 
 // getRecommendations maneja solicitudes GET para obtener recomendaciones analizadas.
 // Acepta parámetros de consulta para filtrado y paginación.
+//
+// @Summary Obtener recomendaciones de stocks
+// @Description Retorna recomendaciones de stocks basadas en análisis
+// @Tags recommendations
+// @Accept json
+// @Produce json
+// @Param limit query int false "Cantidad de recomendaciones" default(6)
+// @Param date_from query string false "Fecha inicial (YYYY-MM-DD)"
+// @Param date_to query string false "Fecha final (YYYY-MM-DD)"
+// @Param rating query string false "Tipo de rating (BUY, SELL, HOLD)"
+// @Param ticker query string false "Símbolo de la acción"
+// @Success 200 {array} models.StockRecommendation "Lista de recomendaciones"
+// @Failure 500 {string} string "Error al analizar stocks"
+// @Router /recommendations [get]
 func (a *API) getRecommendations(w http.ResponseWriter, r *http.Request) {
 	// Obtener parámetros de filtrado
 	query := r.URL.Query()

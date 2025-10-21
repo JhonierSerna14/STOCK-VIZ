@@ -8,8 +8,10 @@ import (
 
 	"github.com/JhonierSerna14/STOCK-VIZ/api"
 	"github.com/JhonierSerna14/STOCK-VIZ/config"
+	_ "github.com/JhonierSerna14/STOCK-VIZ/docs"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 // Server representa el servidor HTTP
@@ -45,6 +47,9 @@ func NewServer(api *api.API, cfg *config.Config) *Server {
 func (s *Server) SetupRoutes() {
 	// Registrar las rutas HTTP para la API
 	s.api.RegisterRoutes(s.router)
+
+	// Configurar Swagger
+	s.router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 }
 
 // Start inicia el servidor HTTP

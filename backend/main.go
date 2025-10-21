@@ -1,4 +1,11 @@
 // Package main es el punto de entrada principal para la aplicación STOCK-VIZ.
+//
+// @title Stock-Viz API
+// @version 1.0
+// @description API para análisis y visualización de stocks
+// @host localhost:8080
+// @BasePath /api
+// @schemes http https
 package main
 
 import (
